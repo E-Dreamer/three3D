@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3d学习</title>
+  <style>
+    html,
+    body {
+      height: 100%;
+      padding: 0;
+      margin: 0;
+    }
+
+    #canvas {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #stats {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      outline: none;
+    }
+
+    .toolbar {
+      position: absolute;
+      top: 50%;
+      left: 10px;
+      box-sizing: border-box;
+      width: 35px;
+      padding: 10px 5px;
+      background-color: #cdd7e6;
+      border-radius: 5px;
+      transform: translateY(-50%);
+    }
+
+    .toolbar>img {
+      width: 25px;
+      height: 25px;
+      margin-bottom: 3px;
+    }
+
+    @keyframes s4 {
+      to {
+        transform: rotate(1turn);
+      }
+    }
+
+    .loading {
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: 99999999;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .text {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .spinner {
+      position: absolute;
+      top: calc(50% - 130px);
+      left: calc(50% - 50px);
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      padding: 1px;
+      background: conic-gradient(#0000 10%, #33f0e0) content-box;
+      -webkit-mask: repeating-conic-gradient(#0000 0deg,
+          #000 1deg 20deg,
+          #0000 21deg 36deg),
+        radial-gradient(farthest-side,
+          #0000 calc(100% - 9px),
+          #000 calc(100% - 8px));
+      -webkit-mask-composite: destination-in;
+      -webkit-composite: intersect;
+      mask-composite: intersect;
+      animation: s4 1s infinite steps(10);
+    }
+
+    #planform {
+      position: absolute;
+      width: 300px;
+      height: 200px;
+      right: 10px;
+      top: 10px;
+      background: #000;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="canvas">
+    <!-- <div class="loading">
+      <div class="spinner"></div>
+      <span class="text">模型正在加载、、、、</span>
+    </div> -->
+
+    <!-- <div id='planform'></div> -->
+  </div>
+</body>
+<script src="./lib/three.js"></script>
+<script src="./lib/stats.js"></script>
+<script src="./lib/ThreeBSP.js"></script>
+<script src="./lib/controls/OrbitControls.js"></script>
+<script src="./lib/tween.js"></script>
+<script src="./lib/loader/GLTFLoader.js"></script>
+<script src="./lib/loader/OBJLoader.js"></script>
+<script src="./lib/loader/MTLLoader.js"></script>
+<script type="text/javascript" src="https://api.map.baidu.com/api?v=2.0&ak=2n8fVTggvHAiKuoc20TwF6P9WpNk2Lpf"></script>
+<script type="module">
+  import Msj3D from './index.js'
+
+    import basedata from './base/baseData.js'
+    import mouseEvent from './base/baseClick.js'
+    const obj3D = new Msj3D()
+    obj3D.mouseEventList = mouseEvent
+    obj3D.initBase()
+    const allData = []
+    // 基础的机柜
+    const baseCabinet = {
+      uuid: '',
+      type: 'cabinet',
+      name: 'cabGroup',
+      width: 80,
+      height: 200,
+      depth: 5,
+      x: -100,
+      y:  60,
+      z: 100,
+      doorName: 'doorName',
+      title: 'title', //机箱上面的标识字体
+      cavasWidth: 120,
+      cavasHeight: 120,
+      skin: {
+        color: 0x8e8e8e,
+        skinUp: {
+          img: 'rack_panel.jpg',
+        },
+        skinBottom: {
+          img: 'rack_panel.jpg',
+        },
+        skinBack: {
+          img: 'rack_panel.jpg',
+        },
+        skinLeft: {
+          img: 'rack_panel.jpg', //整体的贴图
+          frontimg: 'cabz.jpg', //前的贴图
+        },
+        skinRight: {
+          img: 'rack_panel.jpg',
+          frontimg: 'caby.jpg', //前的贴图
+        },
+      },
+      // rotate: {
+      //   y: Math.PI / 2,
+      // },
+    }
+
+    function findCabinet(data, name) {
+      let result = data.find((item) => {
+        return item.name.includes(name)
+      })
+      return result
+    }
+
+    function addCabinet(data,x){
+      let flag = findCabinet(data.children, 'cabinet');
+            if(!flag){
+              for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                  let cabinet = JSON.parse(JSON.stringify(baseCabinet))
+                  cabinet.x = x - 150 + i * 100
+                  cabinet.z = 100 + j * 100 
+                  cabinet.name = `cabinet_${i+1}_${j+1}`
+                  cabinet.title = `A_${i+1}_${j+1}`
+                  data.children.push(cabinet)
+                  obj3D.addObject(obj3D.initCabinet(cabinet))
+                }
+              }
+            }
+    }
+
+    for (let i = 0; i < 10; i++) {
+      const data = JSON.parse(JSON.stringify(basedata))
+      data.x = i * 1500
+      data.name = `room_${i + 1}`
+      data.children[0].skin.skinRight.title = data.name
+      allData.push(data)
+      let doorleft = data.children.find((item) => item.name === 'baseDoorLeft')
+      doorleft.name = `baseDoorLeft_${i + 1}`
+      let doorright = data.children.find(
+        (item) => item.name === 'baseDoorRight'
+      )
+      doorright.name = `baseDoorRight_${i + 1}`
+      let clickarr = [
+        {
+          obj_name: `baseDoorLeft_${i + 1}`,
+          obj_event(obj) {
+            console.log(`这是房间${i+1}`,data);
+            obj3D.openDoor(obj, 'left', '+', 'x')
+            addCabinet(data, i * 750)
+          },
+        },
+        {
+          obj_name: `baseDoorRight_${i + 1}`,
+          obj_event(obj) {
+            obj3D.openDoor(obj, 'right', '+', 'x')
+            addCabinet(data,i * 750)
+          },
+        },
+      ]
+      obj3D.mouseEventList.click = [...obj3D.mouseEventList.click, ...clickarr]
+    }
+    obj3D.createObject(allData)
+
+    console.log(obj3D)
+  </script>
+
+</html>
